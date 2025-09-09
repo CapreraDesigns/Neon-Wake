@@ -9,7 +9,7 @@
       --bg: #0b0d10;
       --panel:#12161b;
       --ink:#e8eef8;
-      --muted:#000000;
+      --muted:#9fb0c3;
       --brand:#7aa2ff;
       --good:#2ecc71;
       --meh:#f1c40f;
@@ -20,7 +20,7 @@
     }
     @media (prefers-color-scheme: light){
       :root{
-        --bg:#f6f8fb;
+        --bg:#000000;
         --panel:#ffffff;
         --ink:#0f172a;
         --muted:#526581;
