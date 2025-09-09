@@ -20,7 +20,7 @@
     }
     @media (prefers-color-scheme: light){
       :root{
-        --bg:#000000;
+        --bg:#f6f8fb;
         --panel:#ffffff;
         --ink:#0f172a;
         --muted:#526581;
