@@ -1,791 +1,567 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neon Wake — A Tiny Browser Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Idea Roast — Pitch it. Get roasted. Score revealed.</title>
+  <meta name="description" content="Submit an idea, get a comical roast and a score. Mobile-friendly, works offline as a single page." />
   <style>
     :root{
-      --bg:#0b1020;
-      --panel:#121a33;
-      --accent:#5af2ff;
-      --accent2:#ff6ad5;
-      --accent3:#8aff6a;
-      --text:#e6f1ff;
-      --muted:#99a6c4;
-      --warn:#ffaf40;
-      --good:#5aff9f;
-      --bad:#ff6969;
+      --bg: #0b0d10;
+      --panel:#12161b;
+      --ink:#e8eef8;
+      --muted:#9fb0c3;
+      --brand:#7aa2ff;
+      --good:#2ecc71;
+      --meh:#f1c40f;
+      --bad:#ff6b6b;
+      --accent:#a78bfa;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f8fb;
+        --panel:#ffffff;
+        --ink:#0f172a;
+        --muted:#526581;
+        --brand:#315cff;
+        --accent:#6d28d9;
+        --shadow: 0 10px 30px rgba(0,0,0,.08);
+      }
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color:var(--text);
-      background:
-        radial-gradient(1000px 700px at 80% -10%, rgba(90,242,255,0.10), transparent 50%),
-        radial-gradient(800px 600px at 10% 110%, rgba(255,106,213,0.10), transparent 50%),
-        linear-gradient(160deg, #060a18, var(--bg) 35%);
+      font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% -10%, rgba(122,162,255,.2), transparent),
+                  radial-gradient(900px 600px at -10% 110%, rgba(167,139,250,.18), transparent),
+                  var(--bg);
+      color:var(--ink);
     }
-
-    /* Simulated website shell */
+    .wrap{
+      max-width:940px;
+      margin:0 auto;
+      padding:18px clamp(16px, 3.5vw, 28px) 40px;
+    }
     header{
-      position:sticky; top:0; z-index:10;
-      backdrop-filter: blur(8px);
-      background: linear-gradient(0deg, rgba(18,26,51,0.7), rgba(18,26,51,0.9));
-      border-bottom:1px solid rgba(255,255,255,0.05);
-    }
-    .container{max-width:1100px; margin:0 auto; padding:0 16px}
-    .topbar{
-      display:flex; align-items:center; gap:16px; padding:14px 0;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:14px 0 8px;
     }
     .logo{
-      display:flex; gap:10px; align-items:center; font-weight:800; letter-spacing:.4px;
+      display:flex;align-items:center;gap:12px;
+      font-weight:800;font-size:1.2rem;letter-spacing:.2px;
     }
-    .logo-badge{
-      width:28px; height:28px; border-radius:8px;
-      background: radial-gradient(120% 120% at 0% 0%, var(--accent), transparent 60%),
-                  radial-gradient(120% 120% at 100% 100%, var(--accent2), transparent 60%),
-                  #0f1430; 
-      box-shadow: 0 0 16px rgba(90,242,255,0.35), inset 0 0 12px rgba(255,255,255,0.06);
-      position:relative;
+    .logo .bubble{
+      width:36px;height:36px;border-radius:10px;
+      background:linear-gradient(135deg,var(--brand),var(--accent));
+      box-shadow: var(--shadow);
+      position:relative;overflow:hidden;
     }
-    .logo-badge:after{
-      content:""; position:absolute; inset:6px;
-      border-radius:6px; border:2px solid rgba(255,255,255,0.08)
+    .logo .bubble::after{
+      content:"🔥"; position:absolute; inset:0;
+      display:grid; place-items:center; font-size:20px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
     }
-    nav{
-      margin-left:auto; display:flex; gap:10px; flex-wrap:wrap;
-    }
-    nav a{
-      color:var(--text); text-decoration:none; font-weight:600; font-size:14px;
-      padding:10px 12px; border-radius:10px;
-      border:1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
-    }
-    nav a.active, nav a:hover{border-color:rgba(255,255,255,0.18); background:rgba(255,255,255,0.06)}
-    main{padding:26px 0 40px}
-    .grid{
-      display:grid; gap:18px; grid-template-columns: 1.3fr .7fr;
-    }
-    .panel{
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:18px; padding:18px; position:relative; overflow:hidden;
-    }
-    .panel h2{margin:0 0 8px 0; font-size:18px}
-    .sub{color:var(--muted); font-size:13px}
-    .btn{
-      appearance:none; border:none; cursor:pointer;
-      padding:12px 14px; border-radius:12px; font-weight:700; font-size:14px;
-      color:#061023; background:linear-gradient(180deg, var(--accent), #56e6f2);
-      box-shadow: 0 6px 20px rgba(90,242,255,0.26);
-    }
-    .btn.secondary{
-      color:var(--text);
-      background: linear-gradient(180deg, #232a4a, #1a2242);
-      border:1px solid rgba(255,255,255,0.06);
-      box-shadow:none;
-    }
-    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .pill{
-      font-size:12px; padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,0.08); color:var(--muted);
-      background: rgba(255,255,255,0.03);
-    }
-    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-weight:700; color:var(--text)}
-
-    /* Game canvas area */
-    #gameWrap{position:relative; min-height:520px}
-    canvas{display:block; width:100%; height:420px; background: radial-gradient(140% 100% at 50% 0%, #0d1736, #060a1a 60%); border-radius:14px; border:1px solid rgba(255,255,255,0.07)}
-    .hud{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      margin-top:12px;
-    }
-    .indicator{padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); font-size:13px}
-    .colorDot{display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; box-shadow:0 0 8px currentColor}
-    .c1{color:var(--accent)}
-    .c2{color:var(--accent2)}
-    .c3{color:var(--accent3)}
-    .mobile-controls{display:none; gap:8px; margin-top:6px}
-    .mobile-controls .btn{padding:10px 12px; font-weight:800}
-
-    /* Secondary column */
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:16px; padding:14px;
+      background:rgba(255,255,255,.03);
+      backdrop-filter:saturate(140%) blur(6px);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
     }
-    .card h3{margin:6px 0 8px 0; font-size:16px}
-    .list{display:flex; flex-direction:column; gap:6px}
-    .list li{display:flex; justify-content:space-between; gap:10px; font-size:14px}
-    .dim{color:var(--muted)}
-
-    /* Sections (SPA) */
-    section{display:none}
-    section.active{display:block}
-    .content{max-width:900px}
-    .content h1{margin:0 0 8px 0}
-    .content p{color:var(--muted); line-height:1.6}
-
-    /* Settings */
-    label.switch{
-      display:inline-flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px;
-      border:1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
+    .intro{
+      padding:18px 18px 8px;
+      color:var(--muted); font-size:.98rem;
     }
-    .switch input{appearance:none; width:42px; height:24px; background:#1b2446; border-radius:999px; position:relative; outline:none; border:1px solid rgba(255,255,255,0.08)}
-    .switch input:before{
-      content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s ease;
+    form{
+      display:grid; gap:12px; padding:8px 8px 12px;
     }
-    .switch input:checked{background:#244f7a}
-    .switch input:checked:before{transform:translateX(18px)}
-
-    footer{
-      text-align:center; color:var(--muted); font-size:12px; padding:24px 0 40px; 
+    label{font-weight:600}
+    textarea{
+      width:100%; min-height:140px; resize:vertical;
+      border-radius:14px; border:1px solid rgba(255,255,255,.12);
+      padding:14px 14px 44px; outline:none;
+      background:var(--panel); color:var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      font-size:1rem;
     }
-
-    @media (max-width: 980px){
-      .grid{grid-template-columns: 1fr}
-      .mobile-controls{display:flex}
+    .toolbar{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+      margin-top:-34px; padding:0 12px 6px;
     }
+    .muted{color:var(--muted); font-size:.9rem}
+    .btn{
+      appearance:none; border:0; border-radius:14px; padding:12px 16px;
+      font-weight:700; cursor:pointer; transition:transform .04s ease, filter .2s;
+      background:linear-gradient(135deg,var(--brand),var(--accent)); color:white;
+      box-shadow: var(--shadow);
+      min-height:44px;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{
+      background:transparent; color:var(--ink);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .result{
+      margin-top:16px; padding:14px;
+      display:none;
+    }
+    .result.show{display:block; animation:pop .35s ease}
+    @keyframes pop{from{transform:scale(.98);opacity:0} to{transform:scale(1);opacity:1}}
+    .scoreRow{
+      display:grid; grid-template-columns: 90px 1fr auto; gap:14px; align-items:center;
+    }
+    .scoreBadge{
+      width:90px; height:90px; border-radius:18px; display:grid; place-items:center;
+      background:linear-gradient(135deg, rgba(122,162,255,.25), rgba(167,139,250,.25));
+      font-size:1.9rem; font-weight:900;
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .meter{height:14px; background:rgba(255,255,255,.07); border-radius:10px; overflow:hidden}
+    .meter > i{display:block; height:100%; width:0%}
+    .meter.good i{background:linear-gradient(90deg,var(--good),#a3e635)}
+    .meter.meh i{background:linear-gradient(90deg,var(--meh),#fb923c)}
+    .meter.bad i{background:linear-gradient(90deg,var(--bad),#ff8fab)}
+    .verdict{margin:8px 0 2px; font-size:1.05rem}
+    .chips{display:flex; flex-wrap:wrap; gap:8px}
+    .chip{
+      font-size:.82rem; padding:6px 10px; border-radius:999px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    }
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .stack{display:grid; gap:12px}
+    .leader{
+      margin-top:18px; padding:10px 14px;
+    }
+    .leader h3{margin:4px 0 8px}
+    .list{display:grid; gap:10px}
+    .row{
+      display:grid; gap:10px; grid-template-columns:1fr auto; align-items:center;
+      padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)
+    }
+    .row .s{font-weight:700}
+    .row .idea{color:var(--muted); font-size:.95rem}
+    footer{margin:28px 0 0; color:var(--muted); font-size:.86rem; text-align:center}
+    .sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+    /* Ensure hit sizes on mobile */
+    .btn, textarea{touch-action:manipulation}
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <div class="topbar">
-        <div class="logo">
-          <span class="logo-badge" aria-hidden="true"></span>
-          <span>Neon Wake</span>
-          <span class="pill">alpha</span>
-        </div>
-        <nav id="nav">
-          <a href="#/home" data-route>Home</a>
-          <a href="#/how" data-route>How to Play</a>
-          <a href="#/hall" data-route>Hall of Fame</a>
-          <a href="#/about" data-route>About</a>
-          <a href="#/settings" data-route>Settings</a>
-        </nav>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-label="Idea Roast">
+        <div class="bubble" aria-hidden="true"></div>
+        <span>Idea Roast</span>
       </div>
-    </div>
-  </header>
+      <button id="randomBtn" class="btn secondary" type="button" aria-label="Surprise me with a random idea">🎲 Random</button>
+    </header>
 
-  <main class="container">
-    <!-- HOME / GAME -->
-    <section id="home" class="active">
-      <div class="grid">
-        <div class="panel">
-          <h2>Arcade</h2>
-          <p class="sub">Surf a neon sea. Shift your boat's light-frequency to phase through matching hazards.</p>
-          <div id="gameWrap">
-            <canvas id="game" width="1024" height="540" aria-label="Neon Wake game canvas"></canvas>
-            <div class="hud">
-              <span class="indicator">Score: <b id="score">0</b></span>
-              <span class="indicator">Level: <b id="level">1</b></span>
-              <span class="indicator">Lives: <b id="lives">3</b></span>
-              <span class="indicator">Mode:
-                <span class="colorDot c1"></span><b id="modeName">Cyan</b>
-              </span>
-              <span class="indicator">Switch: <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span> • Move: <span class="kbd">←</span>/<span class="kbd">→</span></span>
-              <div class="mobile-controls">
-                <button class="btn secondary" id="leftBtn">◀</button>
-                <button class="btn secondary" id="rightBtn">▶</button>
-                <button class="btn" id="m1">1</button>
-                <button class="btn" id="m2">2</button>
-                <button class="btn" id="m3">3</button>
-                <button class="btn secondary" id="pauseBtn">⏸</button>
-              </div>
-            </div>
+    <section class="card">
+      <div class="intro">
+        <p>Pitch your idea, and our lovingly sarcastic judge will rate it from 0–100 and deliver a roast (with affection). Works great on your phone.</p>
+      </div>
+      <form id="form" novalidate>
+        <label for="idea">Your idea</label>
+        <textarea id="idea" name="idea" placeholder="e.g., A self-watering coffee mug that also reminds you to call your mom..."></textarea>
+        <div class="toolbar">
+          <div class="muted" id="counter" aria-live="polite">0 / 3000 chars</div>
+          <div class="actions">
+            <button class="btn secondary" type="button" id="remixBtn">🎯 Remix</button>
+            <button class="btn" type="submit" id="submitBtn">🔥 Roast me</button>
           </div>
         </div>
-        <div class="panel">
-          <div class="card">
-            <h3>How it works</h3>
-            <p class="sub">Obstacles are color‑coded waves. You can safely pass through any wave that matches your light mode.</p>
-            <ul class="list">
-              <li><span><span class="colorDot c1"></span>Cyan Mode</span><span class="dim">safe through cyan</span></li>
-              <li><span><span class="colorDot c2"></span>Magenta Mode</span><span class="dim">safe through magenta</span></li>
-              <li><span><span class="colorDot c3"></span>Lime Mode</span><span class="dim">safe through lime</span></li>
-            </ul>
+      </form>
+    </section>
+
+    <section id="result" class="card result" aria-live="polite" aria-atomic="true">
+      <div class="stack">
+        <div class="scoreRow">
+          <div class="scoreBadge" id="scoreBadge" aria-label="Score">–</div>
+          <div class="stack">
+            <div class="meter" id="meter" role="img" aria-label="Score meter"><i></i></div>
+            <div class="verdict" id="verdict">Your roast will appear here.</div>
+            <div class="chips" id="badges"></div>
           </div>
-          <div class="card">
-            <h3>Quick actions</h3>
-            <div class="row">
-              <button id="startBtn" class="btn">Start</button>
-              <button id="pauseBtn2" class="btn secondary">Pause</button>
-              <button id="resetBtn" class="btn secondary">Reset</button>
-            </div>
-          </div>
-          <div class="card">
-            <h3>Recent Scores</h3>
-            <div id="recentScores" class="list"></div>
+          <div class="stack">
+            <button class="btn secondary" id="copyBtn" type="button">📋 Copy</button>
+            <button class="btn secondary" id="shareBtn" type="button">🔗 Share</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- HOW TO PLAY -->
-    <section id="how">
-      <div class="content">
-        <h1>How to Play</h1>
-        <p><b>Goal:</b> survive as long as possible, collect beacons (+50), and avoid mismatched waves (−1 life).</p>
-        <ol>
-          <li>Use <span class="kbd">←</span> / <span class="kbd">→</span> to steer.</li>
-          <li>Tap <span class="kbd">1</span>, <span class="kbd">2</span>, or <span class="kbd">3</span> to change your light-frequency mode.</li>
-          <li>You can <u>pass through</u> any obstacle that matches your current mode color.</li>
-          <li>Survive waves to increase your <b>Level</b>; higher levels move faster and spawn trickier patterns.</li>
-          <li>Grab <b>beacons</b> for points. Every 1000 points grants an extra life.</li>
-        </ol>
-      </div>
+    <section class="card leader" aria-labelledby="leaderTitle">
+      <h3 id="leaderTitle">Local Hall of Fame (this device)</h3>
+      <div class="list" id="leader"></div>
     </section>
 
-    <!-- HALL OF FAME -->
-    <section id="hall">
-      <div class="content">
-        <h1>Hall of Fame</h1>
-        <p>Highest runs on this device (stored locally).</p>
-        <div id="hallTable"></div>
-      </div>
-    </section>
+    <footer>
+      Pro tip: funny ≠ wrong. If it stings, iterate. If it slays, ship it. ✨
+    </footer>
+  </div>
 
-    <!-- ABOUT -->
-    <section id="about">
-      <div class="content">
-        <h1>About Neon Wake</h1>
-        <p>Designed as a mini‑site to feel like a full game portal, but it’s all in one file. Built with Canvas and love.</p>
-        <p>Concept: a luminous boat surfing spectral seas. Flip your LEDs to phase with the world.</p>
-      </div>
-    </section>
+  <script>
+    // ---------- Utilities ----------
+    const $ = (sel) => document.querySelector(sel);
+    const ideaEl = $('#idea');
+    const form = $('#form');
+    const counter = $('#counter');
+    const resultEl = $('#result');
+    const verdictEl = $('#verdict');
+    const scoreBadge = $('#scoreBadge');
+    const meter = $('#meter');
+    const meterFill = meter.querySelector('i');
+    const badgesEl = $('#badges');
+    const leaderEl = $('#leader');
+    const copyBtn = $('#copyBtn');
+    const shareBtn = $('#shareBtn');
+    const remixBtn = $('#remixBtn');
+    const randomBtn = $('#randomBtn');
 
-    <!-- SETTINGS -->
-    <section id="settings">
-      <div class="content">
-        <h1>Settings</h1>
-        <p class="sub">These settings are saved to your browser.</p>
-        <div class="row" style="gap:14px; flex-wrap:wrap">
-          <label class="switch">
-            <span>Screen shake</span>
-            <input id="shakeToggle" type="checkbox" checked />
-          </label>
-          <label class="switch">
-            <span>SFX</span>
-            <input id="sfxToggle" type="checkbox" checked />
-          </label>
-          <button id="wipeData" class="btn secondary">Clear saved data</button>
-        </div>
-      </div>
-    </section>
-  </main>
+    const BUZZ = [
+      'AI','blockchain','crypto','web3','metaverse','NFT','synergy','pivot','viral','SaaS',
+      'marketplace','platform','ecosystem','disrupt','scale','gamify','LLM','edge','5G','IoT',
+      'quantum','AR','VR','XR','fintech','healthtech','adtech','deep learning','machine learning'
+    ];
+    const CLICHES = [
+      'Uber for','Airbnb for','Tinder for','like Uber but','social network for','platform to connect',
+      'all-in-one','next-gen','world-class','cutting-edge','seamless experience'
+    ];
+    const NICE = ['clever','surprisingly sane','niche-smart','customer-obsessed','ship-ready','earnest'];
+    const SILLY = ['unhinged (in a good way)','caffeine-fueled','meme-adjacent','vibe-forward','delusionally confident'];
 
-  <footer>
-    © <span id="year"></span> Neon Wake. Made for fun.
-  </footer>
-
-<script>
-(() => {
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const rand = (a,b) => Math.random()*(b-a)+a;
-  const choice = (arr) => arr[(Math.random()*arr.length)|0];
-
-  // SPA Router
-  function route(){
-    const hash = location.hash || "#/home";
-    const page = hash.split("/")[1];
-    $$("nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#/"+page));
-    $$("main section").forEach(s => s.classList.remove("active"));
-    const sec = $("#"+page);
-    if(sec) sec.classList.add("active");
-    if(page==="hall") renderHall();
-  }
-  window.addEventListener("hashchange", route);
-  route();
-
-  // Year
-  $("#year").textContent = new Date().getFullYear();
-
-  // Settings
-  const Settings = {
-    key: "neonwake_settings",
-    data: { shake:true, sfx:true },
-    load(){
-      try{
-        const raw = localStorage.getItem(this.key);
-        if(raw) this.data = Object.assign(this.data, JSON.parse(raw));
-      }catch(e){}
-      $("#shakeToggle").checked = !!this.data.shake;
-      $("#sfxToggle").checked = !!this.data.sfx;
-    },
-    save(){
-      this.data.shake = $("#shakeToggle").checked;
-      this.data.sfx = $("#sfxToggle").checked;
-      localStorage.setItem(this.key, JSON.stringify(this.data));
-    }
-  };
-  Settings.load();
-  $("#shakeToggle").addEventListener("change", ()=>Settings.save());
-  $("#sfxToggle").addEventListener("change", ()=>Settings.save());
-  $("#wipeData").addEventListener("click", ()=>{
-    if(confirm("Clear local highscores and settings?")){
-      localStorage.removeItem(Hiscore.key);
-      localStorage.removeItem(Settings.key);
-      Settings.load();
-      renderHall();
-      alert("Cleared!");
-    }
-  });
-
-  // Scores
-  const Hiscore = {
-    key: "neonwake_scores",
-    list: [],
-    load(){ try{ this.list = JSON.parse(localStorage.getItem(this.key)||"[]"); }catch(e){ this.list=[] } },
-    save(){ localStorage.setItem(this.key, JSON.stringify(this.list.slice(0,20))); },
-    add(entry){
-      this.list.push(entry);
-      this.list.sort((a,b)=>b.score-a.score);
-      this.save();
-    }
-  };
-  Hiscore.load();
-
-  function renderRecent(){
-    const el = $("#recentScores");
-    el.innerHTML = Hiscore.list.slice(0,5).map(s => 
-      `<div class="row" style="justify-content:space-between">
-         <span>${new Date(s.date).toLocaleString()}</span>
-         <b>${s.score}</b>
-       </div>`
-    ).join("") || '<div class="dim">No runs yet.</div>';
-  }
-  function renderHall(){
-    const el = $("#hallTable");
-    if(!Hiscore.list.length){ el.innerHTML = '<p class="dim">No scores yet.</p>'; return; }
-    el.innerHTML = `
-      <div class="panel">
-        <div class="list">
-          ${Hiscore.list.slice(0,20).map((s,i)=>`
-            <div style="display:grid; grid-template-columns: 40px 1fr 120px 100px; gap:8px; align-items:center">
-              <div class="pill">${i+1}</div>
-              <div><b>${s.name||"Pilot"}</b><div class="dim" style="font-size:12px">${new Date(s.date).toLocaleString()}</div></div>
-              <div><b>${s.score}</b> pts</div>
-              <div class="dim">Lv ${s.level}</div>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  }
-  renderRecent();
-
-  // Audio (tiny synth beeps)
-  let ac;
-  function ping(freq=440, dur=0.08, type="sine", vol=0.2){
-    if(!Settings.data.sfx) return;
-    try{
-      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
-      const o = ac.createOscillator();
-      const g = ac.createGain();
-      o.type = type; o.frequency.value = freq;
-      g.gain.setValueAtTime(vol, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
-      o.connect(g); g.connect(ac.destination);
-      o.start(); o.stop(ac.currentTime + dur);
-    }catch(e){}
-  }
-
-  // Game
-  const canvas = $("#game");
-  const ctx = canvas.getContext("2d");
-  let W, H, DPR=window.devicePixelRatio||1;
-  function resize(){
-    const rect = canvas.getBoundingClientRect();
-    W = Math.floor(rect.width*DPR);
-    H = Math.floor(rect.height*DPR);
-    canvas.width = W; canvas.height = H;
-  }
-  resize(); window.addEventListener("resize", resize);
-
-  const Modes = [
-    {name:"Cyan", color:"#5af2ff"},
-    {name:"Magenta", color:"#ff6ad5"},
-    {name:"Lime", color:"#8aff6a"},
-  ];
-
-  const state = {
-    running:false, paused:false,
-    score:0, level:1, lives:3,
-    mode:0, speed:2.0, tick:0,
-    entities:[], beacons:[],
-    px:0.5, vx:0, inputLeft:false, inputRight:false,
-  };
-
-  const ui = {
-    score: $("#score"), level: $("#level"), lives: $("#lives"), modeName: $("#modeName")
-  };
-
-  function reset(){
-    state.running=false; state.paused=false;
-    state.score=0; state.level=1; state.lives=3; state.speed=2;
-    state.tick=0; state.entities.length=0; state.beacons.length=0;
-    state.px=0.5; state.vx=0; state.mode=0;
-    shake(0);
-    updateHUD();
-    drawSplash();
-  }
-
-  function updateHUD(){
-    ui.score.textContent = state.score|0;
-    ui.level.textContent = state.level;
-    ui.lives.textContent = state.lives;
-    ui.modeName.textContent = Modes[state.mode].name;
-    ui.modeName.parentElement.parentElement.querySelector(".colorDot").className = "colorDot " + (state.mode===0?'c1':state.mode===1?'c2':'c3');
-  }
-
-  function start(){
-    if(state.running) return;
-    state.running = true;
-    state.paused = false;
-    state.score = 0;
-    state.level = 1;
-    state.lives = 3;
-    state.speed = 2;
-    state.entities = [];
-    state.beacons = [];
-    state.tick = 0;
-    spawnPattern();
-    ping(660,0.09,"triangle");
-  }
-
-  function togglePause(){
-    if(!state.running) return;
-    state.paused = !state.paused;
-  }
-
-  // Input
-  window.addEventListener("keydown", (e)=>{
-    if(e.key==="ArrowLeft" || e.key==="a"){ state.inputLeft = true; }
-    if(e.key==="ArrowRight" || e.key==="d"){ state.inputRight = true; }
-    if(e.key==="1") setMode(0);
-    if(e.key==="2") setMode(1);
-    if(e.key==="3") setMode(2);
-    if(e.key===" "){ e.preventDefault(); if(!state.running) start(); else togglePause(); }
-  });
-  window.addEventListener("keyup", (e)=>{
-    if(e.key==="ArrowLeft" || e.key==="a"){ state.inputLeft = false; }
-    if(e.key==="ArrowRight" || e.key==="d"){ state.inputRight = false; }
-  });
-
-  $("#leftBtn").addEventListener("touchstart", ()=>state.inputLeft=true);
-  $("#leftBtn").addEventListener("touchend", ()=>state.inputLeft=false);
-  $("#rightBtn").addEventListener("touchstart", ()=>state.inputRight=true);
-  $("#rightBtn").addEventListener("touchend", ()=>state.inputRight=false);
-  $("#m1").addEventListener("click", ()=>setMode(0));
-  $("#m2").addEventListener("click", ()=>setMode(1));
-  $("#m3").addEventListener("click", ()=>setMode(2));
-  $("#pauseBtn").addEventListener("click", togglePause);
-  $("#startBtn").addEventListener("click", start);
-  $("#pauseBtn2").addEventListener("click", togglePause);
-  $("#resetBtn").addEventListener("click", reset);
-
-  function setMode(m){
-    if(m===state.mode) return;
-    state.mode = m;
-    updateHUD();
-    ping([550,700,420][m],0.05,"square",0.18);
-  }
-
-  // Entities
-  function spawnPattern(){
-    // Spawn a wave row of obstacles with gaps and beacons
-    const cols = 8;
-    const gapCount = Math.max(1, 3 - Math.floor(state.level/3));
-    const safeCols = new Set();
-    while(safeCols.size < gapCount) safeCols.add((Math.random()*cols)|0);
-    const modeForRow = Math.random()<0.65 ? (Math.random()*3|0) : -1; // either consistent or mixed row
-
-    for(let c=0; c<cols; c++){
-      if(safeCols.has(c) && Math.random()<0.7){
-        // maybe place a beacon in a gap
-        if(Math.random() < 0.35){
-          state.beacons.push({
-            x:(c+0.5)/cols, y:-0.05, r:0.012, vy: state.speed*0.0025, take:false
-          });
-        }
-        continue;
+    // Deterministic hash & PRNG so the same idea always gets the same score + jokes
+    function hashString(str){
+      let h = 2166136261 >>> 0;
+      for (let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
       }
-      const mode = modeForRow===-1 ? (Math.random()*3|0) : modeForRow;
-      state.entities.push({
-        x:(c+0.5)/cols, y:-0.05, w:0.12, h:0.08, mode,
-        vy: state.speed*0.003
+      return h >>> 0;
+    }
+    function mulberry32(a){
+      return function(){
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+    function uniq(arr){ return [...new Set(arr)]; }
+    function words(s){ return s.toLowerCase().match(/[a-z0-9’']+/g) || []; }
+
+    function analyzeIdea(text){
+      const w = words(text);
+      const unique = uniq(w);
+      const len = text.trim().length;
+      const wc = w.length;
+      const buzzCount = BUZZ.map(b => (text.toLowerCase().includes(b.toLowerCase()) ? 1:0)).reduce((a,b)=>a+b,0);
+      const clicheHit = CLICHES.find(c => text.toLowerCase().includes(c.toLowerCase()));
+      const avgWordLen = w.length ? w.join('').length / w.length : 0;
+      const uniqueRatio = w.length ? unique.length / w.length : 0;
+      const hasProblem = /(pain point|problem|need|job to be done|JTBD)/i.test(text);
+      const hasCustomer = /(for (moms|students|gamers|developers|nurses|teachers|seniors|boaters|sailors|founders))/i.test(text);
+      const hasHow = /(how it works|we do this by|using|with|via|because)/i.test(text);
+      return {len, wc, buzzCount, clicheHit, avgWordLen, uniqueRatio, hasProblem, hasCustomer, hasHow, uniqueWords:unique.length};
+    }
+
+    function scoreIdea(text){
+      const a = analyzeIdea(text);
+      const seed = hashString(text);
+      const rnd = mulberry32(seed);
+
+      // Start at 50; add/subtract based on signals
+      let s = 50;
+
+      // Brevity/clarity: sweet spot ~ 18–80 words
+      if(a.wc >= 18 && a.wc <= 80) s += 18;
+      else if(a.wc >= 8 && a.wc < 18) s += 8;
+      else if(a.wc > 80 && a.wc < 200) s += 2;
+      else s -= 8;
+
+      // Explainability / specificity
+      if(a.hasProblem) s += 8;
+      if(a.hasCustomer) s += 6;
+      if(a.hasHow) s += 10;
+
+      // Novelty proxy
+      s += Math.round((a.uniqueRatio - 0.45) * 20); // usually -10..+10
+
+      // Buzzword drag (light roast) but allow 0 or 1 for flavor
+      if(a.buzzCount === 0) s += 4;
+      if(a.buzzCount === 1) s += 1;
+      if(a.buzzCount >= 3) s -= 10;
+
+      // Cliché penalty
+      if(a.clicheHit) s -= 12;
+
+      // Word length sanity: too many tiny words or very long
+      if(a.avgWordLen < 3.8) s -= 4;
+      if(a.avgWordLen > 7) s -= 4;
+
+      // Sprinkle deterministic chaos ±6
+      s += Math.round((rnd()*12)-6);
+
+      return clamp(Math.round(s), 0, 100);
+    }
+
+    function badgesFor(text, score){
+      const a = analyzeIdea(text);
+      const arr = [];
+      if(a.hasCustomer) arr.push('🎯 Clear customer');
+      if(a.hasProblem) arr.push('🩹 Real problem');
+      if(a.hasHow) arr.push('🔧 How it works');
+      if(a.uniqueRatio > 0.65) arr.push('🧪 Spicy novelty');
+      if(a.buzzCount>=3) arr.push('🧱 Buzzword salad');
+      if(a.clicheHit) arr.push('♻️ Seen this before');
+      if(a.wc<10) arr.push('🫥 Needs details');
+      if(score>=85) arr.push('💎 Fundable vibe');
+      if(score<=30) arr.push('🧯 Scope it down');
+      return arr.slice(0,6);
+    }
+
+    function roast(text, score){
+      const a = analyzeIdea(text);
+      const seed = hashString(text)+score;
+      const rnd = mulberry32(seed);
+
+      const openers = [
+        "Verdict:", "Spit-take:", "Immediate thought:", "Boardroom whisper:", "Honest take:"
+      ];
+      const hooksHigh = [
+        "If you don't ship this, someone else will and take the yacht.", 
+        "This is so sensible it's almost suspicious.",
+        "My eyebrows just invested.",
+        "It’s giving ‘users would actually pay.’",
+        "Congrats, you’ve discovered capitalism’s favorite button."
+      ];
+      const hooksMid = [
+        "It could work—once you wrestle it out of the buzzword swamp.",
+        "Solid B+. Sand it, stain it, sell it.",
+        "Put this in front of 10 humans; 3 will nod, 1 will ask to pay.",
+        "I can see the product; your deck can’t yet.",
+        "Promising. Now remove 40% of the adjectives."
+      ];
+      const hooksLow = [
+        "Ambitious! Now tell us what it does.",
+        "Currently a vibe, not a venture.",
+        "Reads like a horoscope for VCs.",
+        "It’s ‘Uber for’… déjà vu for me.",
+        "Great dream. Prototype’s alarm just went off."
+      ];
+
+      const zingers = [
+        "Add a price and a person, not another platform.",
+        "Clichés are calories: you burned none.",
+        "Scope creep is tapping on the window.",
+        "Users don’t want ‘AI’; they want a nap and a button.",
+        "Your TAM includes my grandma and three of her cats."
+      ];
+
+      let hook;
+      if(score>=85) hook = hooksHigh[Math.floor(rnd()*hooksHigh.length)];
+      else if(score>=50) hook = hooksMid[Math.floor(rnd()*hooksMid.length)];
+      else hook = hooksLow[Math.floor(rnd()*hooksLow.length)];
+
+      const opener = openers[Math.floor(rnd()*openers.length)];
+      const zing = (a.clicheHit || a.buzzCount>=3 || a.wc<10) ? zingers[Math.floor(rnd()*zingers.length)] : "";
+
+      // Bonus keyword-aware quips
+      const kw = BUZZ.find(b => text.toLowerCase().includes(b.toLowerCase()));
+      const kwJoke = kw ? ` Also, "${kw}" jar: put a dollar in.` : "";
+
+      return `${opener} ${hook} ${zing}${kwJoke}`.trim();
+    }
+
+    function setMeter(score){
+      meterFill.style.width = score + '%';
+      meter.classList.remove('good','meh','bad');
+      if(score>=70) meter.classList.add('good');
+      else if(score>=40) meter.classList.add('meh');
+      else meter.classList.add('bad');
+      scoreBadge.textContent = score;
+      scoreBadge.setAttribute('aria-label', `Score ${score} out of 100`);
+    }
+
+    function updateLeader(text, score){
+      const key = 'ideaRoast.leader';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const now = new Date().toISOString();
+      list.push({ text, score, ts: now });
+      // keep top 8 by score, tie-break newer
+      const top = list.sort((a,b)=> b.score - a.score || (b.ts.localeCompare(a.ts))).slice(0,8);
+      localStorage.setItem(key, JSON.stringify(top));
+      renderLeader(top);
+    }
+
+    function renderLeader(list){
+      const data = list || JSON.parse(localStorage.getItem('ideaRoast.leader') || '[]');
+      leaderEl.innerHTML = '';
+      if(!data.length){
+        const div = document.createElement('div');
+        div.className='muted';
+        div.textContent = 'No legends yet. Be the first.';
+        leaderEl.appendChild(div);
+        return;
+      }
+      data.forEach(({text,score})=>{
+        const row = document.createElement('div');
+        row.className='row';
+        const left = document.createElement('div');
+        const title = document.createElement('div'); title.className='idea'; title.textContent = crop(text, 120);
+        const scr = document.createElement('div'); scr.className='s'; scr.textContent = score;
+        left.appendChild(title);
+        row.appendChild(left);
+        row.appendChild(scr);
+        leaderEl.appendChild(row);
       });
     }
-  }
 
-  let shakePower = 0;
-  function shake(p){ shakePower = Settings.data.shake ? Math.max(shakePower, p) : 0; }
+    function crop(s, n){ return s.length>n ? s.slice(0, n-1)+'…' : s; }
 
-  function tick(dt){
-    if(!state.running || state.paused) return;
-
-    state.tick += dt;
-    const accel = 0.0035*dt;
-    const fric = 0.92;
-
-    if(state.inputLeft) state.vx -= accel;
-    if(state.inputRight) state.vx += accel;
-    state.vx *= fric;
-    state.px = clamp(state.px + state.vx, 0.05, 0.95);
-
-    // Progress difficulty
-    if(state.tick > 2500){
-      state.tick = 0;
-      state.level++;
-      state.speed *= 1.08;
-      ping(800,0.06,"sawtooth",0.12);
-    }
-
-    // Spawn rows
-    if(Math.random() < 0.02 + state.speed*0.002){
-      spawnPattern();
-    }
-
-    // Move and collide
-    const boatX = state.px*W;
-    const boatY = H*0.82;
-    const boatR = Math.max(10, Math.min(26, H*0.03));
-
-    // Entities
-    for(let i=state.entities.length-1;i>=0;i--){
-      const e = state.entities[i];
-      e.y += e.vy * dt;
-      const ex = e.x*W, ey = e.y*H, ew = e.w*W, eh = e.h*H;
-      // AABB vs circle
-      const cx = clamp(boatX, ex-ew/2, ex+ew/2);
-      const cy = clamp(boatY, ey-eh/2, ey+eh/2);
-      const dx = boatX - cx, dy = boatY - cy;
-      const hit = (dx*dx + dy*dy) <= (boatR*boatR);
-      if(hit && e.mode !== state.mode){
-        // Lose life
-        state.lives--;
-        ping(200,0.2,"sawtooth",0.15);
-        shake(10);
-        state.entities.splice(i,1);
-        if(state.lives<=0){ gameOver(); return; }
-      }else if(hit && e.mode === state.mode){
-        // Safe pass: small score
-        state.score += 5;
-        state.entities.splice(i,1);
-      }else if(e.y > 1.2){
-        state.entities.splice(i,1);
+    function confetti(score){
+      if(score < 85) return; // Celebrate only the bangers
+      const count = 36;
+      for(let i=0;i<count;i++){
+        const span = document.createElement('span');
+        const size = 6 + Math.random()*10;
+        span.textContent = ['✨','🎉','💥','🌟','🧨'][i%5];
+        span.style.position='fixed';
+        span.style.left = (Math.random()*100)+'%';
+        span.style.top = '-20px';
+        span.style.fontSize = size+'px';
+        span.style.zIndex = 9999;
+        span.style.transition = 'transform 1.2s ease, opacity 1.2s ease';
+        document.body.appendChild(span);
+        requestAnimationFrame(()=>{
+          span.style.transform = `translateY(${window.innerHeight+40}px) rotate(${(Math.random()*120-60)}deg)`;
+          span.style.opacity = '0';
+        });
+        setTimeout(()=> span.remove(), 1300);
       }
     }
 
-    // Beacons
-    for(let i=state.beacons.length-1;i>=0;i--){
-      const b = state.beacons[i];
-      b.y += b.vy * dt;
-      const bx = b.x*W, by = b.y*H, br = b.r*W;
-      const dx = boatX - bx, dy = boatY - by;
-      if(dx*dx + dy*dy <= (boatR+br)*(boatR+br)){
-        state.score += 50;
-        ping(880,0.08,"triangle",0.18);
-        state.beacons.splice(i,1);
-      }else if(b.y > 1.2){
-        state.beacons.splice(i,1);
+    function evaluate(){
+      const text = (ideaEl.value || "").trim();
+      if(!text){
+        ideaEl.focus();
+        ideaEl.setAttribute('aria-invalid','true');
+        return;
       }
+      ideaEl.removeAttribute('aria-invalid');
+
+      const score = scoreIdea(text);
+      setMeter(score);
+      verdictEl.textContent = roast(text, score);
+
+      const tags = badgesFor(text, score);
+      badgesEl.innerHTML = '';
+      tags.forEach(t=>{
+        const chip = document.createElement('div');
+        chip.className='chip';
+        chip.textContent = t;
+        badgesEl.appendChild(chip);
+      });
+
+      resultEl.classList.add('show');
+      updateLeader(text, score);
+      confetti(score);
+      history.replaceState({}, '', '#score-'+score); // simple deep link hint
     }
 
-    // Extra life per 1000
-    if((state.scorePrevMilestone|0)!==((state.score/1000)|0)){
-      state.scorePrevMilestone = (state.score/1000)|0;
-      if(state.scorePrevMilestone>0){
-        state.lives++;
-        ping(520,0.08,"sine",0.18);
+    // ---------- Events ----------
+    ideaEl.addEventListener('input', ()=>{
+      const v = ideaEl.value;
+      counter.textContent = `${v.length} / 3000 chars`;
+      if(v.length>3000){
+        ideaEl.value = v.slice(0,3000);
       }
+    });
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      evaluate();
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      const text = ideaEl.value.trim();
+      if(!text) return;
+      const out = `Idea: ${text}\nScore: ${scoreBadge.textContent}\nRoast: ${verdictEl.textContent}`;
+      try{
+        await navigator.clipboard.writeText(out);
+        copyBtn.textContent = '✅ Copied';
+        setTimeout(()=> copyBtn.textContent = '📋 Copy', 1200);
+      }catch{
+        alert('Copy failed. You can select and copy manually.');
+      }
+    });
+
+    shareBtn.addEventListener('click', async ()=>{
+      const idea = ideaEl.value.trim();
+      if(!idea) return;
+      const score = scoreBadge.textContent;
+      const text = `I pitched an idea and scored ${score}/100 on Idea Roast.\n"${crop(idea, 160)}"`;
+      const url = location.href.split('#')[0];
+      if(navigator.share){
+        try{ await navigator.share({ title:'Idea Roast', text, url }); }catch{}
+      }else{
+        prompt('Share this link:', url);
+      }
+    });
+
+    remixBtn.addEventListener('click', ()=>{
+      const seed = ideaEl.value.trim();
+      const s = seed ? hashString(seed) : Math.floor(Math.random()*1e9);
+      const rnd = mulberry32(s);
+      const twists = [
+        "…but as a weekend kit you assemble with friends.",
+        "…for a town of 8,000 people with one grumpy mayor.",
+        "…without an app. Only SMS + magnets.",
+        "…with a $0 marketing budget and a meme account.",
+        "…for boats only. Yes, boats.",
+        "…that works offline and hates subscriptions.",
+        "…bundled with a sticker that becomes the product.",
+        "…limited to 10 customers paying a lot.",
+        "…as a physical card game you can sell at checkout.",
+        "…by deleting features until my grandma understands."
+      ];
+      const starters = [
+        "Take your idea and reimagine it",
+        "Now pivot recklessly",
+        "Chaotic good version",
+        "Constraint speedrun",
+        "Make it delightful and weird"
+      ];
+      const t1 = starters[Math.floor(rnd()*starters.length)];
+      const t2 = twists[Math.floor(rnd()*twists.length)];
+      ideaEl.value = (seed ? seed.replace(/\.*\s*$/,'') : "A tiny service that fixes one recurring annoyance") + " " + t2;
+      ideaEl.dispatchEvent(new Event('input'));
+    });
+
+    randomBtn.addEventListener('click', ()=>{
+      const samples = [
+        "A pocket-sized whiteboard that auto-scans your math and tutors you",
+        "A marketplace where seniors rent out kitchen time to college students who miss home cooking",
+        "A mailbox that only opens when you’ve taken 5,000 steps (anti-doomscroll lock)",
+        "A thermostat that negotiates with your roommates via emoji",
+        "An app that schedules your chores like Uber shifts with surge pricing for laundry",
+        "LED strips that show your boat’s fuel level by color on the hull"
+      ];
+      const s = samples[Math.floor(Math.random()*samples.length)];
+      ideaEl.value = s;
+      ideaEl.dispatchEvent(new Event('input'));
+    });
+
+    // ---------- Init ----------
+    renderLeader();
+    // Focus textarea on load for quick play (but avoid stealing focus on mobile)
+    if(!/Mobi|Android/i.test(navigator.userAgent)){
+      setTimeout(()=> ideaEl.focus(), 200);
     }
-
-    updateHUD();
-
-    // Render
-    drawScene(boatX, boatY, boatR);
-  }
-
-  function gameOver(){
-    state.running=false; state.paused=false;
-    drawScene(state.px*W, H*0.82, Math.max(10, Math.min(26, H*0.03)));
-    ctx.save();
-    ctx.translate(W/2, H*0.4);
-    ctx.fillStyle = "#fff";
-    ctx.textAlign="center";
-    ctx.font = (H*0.06)+"px ui-sans-serif,system-ui";
-    ctx.fillText("Game Over", 0, 0);
-    ctx.font = (H*0.03)+"px ui-sans-serif,system-ui";
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fillText("Score: "+(state.score|0)+"  •  Level: "+state.level, 0, H*0.06);
-    ctx.restore();
-
-    setTimeout(()=>{
-      const name = prompt("Add your name to the Hall of Fame?", "Pilot");
-      Hiscore.add({name, score: state.score|0, level: state.level, date: Date.now()});
-      renderRecent(); renderHall();
-      location.hash = "#/hall";
-    }, 100);
-  }
-
-  function drawSplash(){
-    drawScene(state.px*W, H*0.82, Math.max(10, Math.min(26, H*0.03)));
-    ctx.save();
-    ctx.translate(W/2, H*0.36);
-    ctx.textAlign="center";
-    const g = ctx.createLinearGradient(-200,0,200,0);
-    g.addColorStop(0, "#5af2ff");
-    g.addColorStop(1, "#ff6ad5");
-    ctx.fillStyle = g;
-    ctx.shadowColor = "#5af2ff"; ctx.shadowBlur = 20;
-    ctx.font = (H*0.08)+"px ui-sans-serif,system-ui";
-    ctx.fillText("NEON WAKE", 0, 0);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.font = (H*0.03)+"px ui-sans-serif,system-ui";
-    ctx.fillText("Press SPACE or click Start to play", 0, H*0.07);
-    ctx.restore();
-  }
-
-  function drawScene(boatX, boatY, boatR){
-    // camera shake
-    const sx = (Math.random()*2-1)*shakePower;
-    const sy = (Math.random()*2-1)*shakePower;
-    shakePower *= 0.9;
-
-    ctx.clearRect(0,0,W,H);
-
-    // Sea gradient
-    const sea = ctx.createLinearGradient(0,0,0,H);
-    sea.addColorStop(0, "#0e1740");
-    sea.addColorStop(1, "#050a1d");
-    ctx.fillStyle = sea;
-    ctx.fillRect(0,0,W,H);
-
-    // Horizon glow
-    const glowGrad = ctx.createRadialGradient(W/2, H*0.1, 10, W/2, H*0.1, H*0.7);
-    glowGrad.addColorStop(0, "rgba(90,242,255,0.25)");
-    glowGrad.addColorStop(1, "transparent");
-    ctx.fillStyle = glowGrad;
-    ctx.fillRect(0,0,W,H*0.7);
-
-    ctx.save();
-    ctx.translate(sx, sy);
-
-    // Draw entities (waves)
-    for(const e of state.entities){
-      const col = Modes[e.mode].color;
-      const x = e.x*W, y = e.y*H, w=e.w*W, h=e.h*H;
-      ctx.fillStyle = col;
-      ctx.globalAlpha = 0.86;
-      roundRect(ctx, x-w/2, y-h/2, w, h, Math.min(18, h*0.6));
-      ctx.fill();
-      ctx.globalAlpha=1;
-      // emission
-      ctx.strokeStyle = col;
-      ctx.lineWidth = Math.max(2, h*0.2);
-      ctx.globalAlpha = 0.25;
-      ctx.strokeRect(x-w/2, y-h/2, w, h);
-      ctx.globalAlpha=1;
-    }
-
-    // Beacons
-    for(const b of state.beacons){
-      const x = b.x*W, y = b.y*H, r = b.r*W;
-      const g = ctx.createRadialGradient(x,y,2, x,y,r*2.5);
-      g.addColorStop(0, "#fff");
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-    }
-
-    // Boat
-    const mcol = Modes[state.mode].color;
-    drawBoat(ctx, boatX, boatY, boatR, mcol);
-
-    // Wake trail
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = mcol;
-    for(let i=0;i<8;i++){
-      const r = boatR + i*4;
-      ctx.beginPath(); ctx.arc(boatX, boatY+10+i*6, r, Math.PI, 0); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    ctx.restore();
-  }
-
-  function roundRect(ctx, x, y, w, h, r){
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.lineTo(x+w-r, y);
-    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-    ctx.lineTo(x+w, y+h-r);
-    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-    ctx.lineTo(x+r, y+h);
-    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-    ctx.lineTo(x, y+r);
-    ctx.quadraticCurveTo(x, y, x+r, y);
-    ctx.closePath();
-  }
-
-  function drawBoat(ctx, x, y, r, color){
-    // hull
-    ctx.fillStyle = "#0b132f";
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x, y-r*1.3);
-    ctx.lineTo(x+r*0.8, y+r*0.9);
-    ctx.lineTo(x-r*0.8, y+r*0.9);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    // cabin
-    ctx.fillStyle = "#101944";
-    roundRect(ctx, x-r*0.45, y-r*0.3, r*0.9, r*0.5, r*0.12);
-    ctx.fill();
-
-    // LEDs strip glow
-    ctx.shadowColor = color; ctx.shadowBlur = 18;
-    ctx.strokeStyle = color; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x-r*0.9, y+r*0.8);
-    ctx.lineTo(x+r*0.9, y+r*0.8);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-  }
-
-  let last = performance.now();
-  function loop(t){
-    const dt = Math.min(40, t-last); // clamp to avoid huge jumps
-    last = t;
-    tick(dt);
-    if(!state.running && !state.paused){
-      // idle animation / splash gets redrawn occasionally
-    }
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-
-  // Initial draw
-  drawSplash();
-
-  // Utility: ensure focus for key input
-  canvas.addEventListener("click", ()=>canvas.focus({preventScroll:true}));
-
-  // Populate recent on load
-  renderRecent();
-
-})();
-</script>
-
+  </script>
 </body>
 </html>
